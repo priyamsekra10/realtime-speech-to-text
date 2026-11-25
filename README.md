@@ -50,7 +50,8 @@ Whisper transcribes a finished clip. It has no streaming mode. The streaming is 
 
 - Incoming audio goes into a buffer. A voice activity detector (Silero, bundled with faster-whisper) marks where speech is.
 - About twice a second the open utterance is transcribed again with a fast greedy decode and sent as a `partial`.
-- When the detector sees a pause of half a second, the utterance is transcribed once more with beam search, sent as a `final`, and cut from the buffer.
+- Whisper pads every clip to 30 seconds, so a two-word clip costs as much as a full one. Interim decodes call the model with a 10 or 15 second window, which is about 2.7 times faster on one CPU thread. A window cut tighter than that made the model repeat itself, so it is not used.
+- When the detector sees a pause of half a second, the utterance becomes a `final` and is cut from the buffer. If the last interim decode already heard the whole utterance, its text is reused, so nothing stalls at the pause.
 - Silence is dropped, and speech that runs past 20 seconds without a pause is cut so the buffer stays small.
 - A short list of procurement words (RFQ, BOQ, quotation, ...) is passed to both engines as a hint. It is set with `VOCABULARY`.
 

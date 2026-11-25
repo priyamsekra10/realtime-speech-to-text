@@ -13,6 +13,7 @@ STEP = SR // 2
 KEEP = SR // 2
 MAX_OPEN = 20 * SR
 PAUSE = SR // 10
+TAIL = SR // 5
 VAD = VadOptions(min_silence_duration_ms=500, speech_pad_ms=200)
 
 
@@ -85,6 +86,7 @@ class WhisperStream:
         self.buf = np.zeros(0, np.float32)
         self.offset = 0
         self.fresh = 0
+        self.heard = ("", 0)
         self.ended = False
         self.out = asyncio.Queue()
         self.task = None
@@ -146,13 +148,19 @@ class WhisperStream:
             stop = 0
 
         if not stop:
-            text = (await self.eng.decode(buf[first:])).rstrip(".")
-            if text:
-                self.out.put_nowait(Event("partial", text, self.ms(first), self.ms(len(buf))))
+            text = await self.eng.decode(buf[first:])
+            self.heard = (text, self.offset + len(buf))
+            if text.rstrip("."):
+                self.out.put_nowait(Event("partial", text.rstrip("."), self.ms(first), self.ms(len(buf))))
             return False
 
-        text = await self.eng.decode(buf[first:stop], beam=5)
+        text, upto = self.heard
+        if stop != last or upto < self.offset + stop - TAIL:
+            text = await self.eng.decode(buf[first:stop])
+        if not text:
+            text = await self.eng.decode(buf[first:stop], beam=5)
         if text:
             self.out.put_nowait(Event("final", text, self.ms(first), self.ms(stop)))
+        self.heard = ("", 0)
         self.cut(stop)
         return True
