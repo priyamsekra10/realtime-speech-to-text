@@ -7,7 +7,7 @@ import pytest
 
 from app.stt import whisper
 from app.stt.base import SR
-from app.stt.whisper import WhisperEngine, WhisperStream
+from app.stt.whisper import WhisperEngine, WhisperStream, sane, window
 
 MODEL = Path(__file__).parents[2] / "models" / "hinglish-swift"
 CLIP = Path(__file__).parents[2] / "samples" / "all.wav"
@@ -86,6 +86,19 @@ def test_silence_is_dropped(monkeypatch):
     kept, events = asyncio.run(go())
     assert events == []
     assert kept == whisper.KEEP
+
+
+def test_short_speech_gets_a_short_window():
+    assert window(3 * SR) == 1000
+    assert window(10 * SR) == 1500
+    assert window(18 * SR) == 3000
+
+
+def test_runaway_text_is_dropped():
+    assert sane("Please mujhe paanch sau kilo cement ka quotation bhej do")
+    assert sane("haan haan haan")
+    assert not sane("5 5 5 5 5 5 5 5 5 5 5 5")
+    assert not sane("K" + "A" * 60)
 
 
 @pytest.mark.skipif(not (MODEL.is_dir() and CLIP.is_file()), reason="needs the model and a sample clip")
