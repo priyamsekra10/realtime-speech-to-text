@@ -1,0 +1,36 @@
+[project]
+name = "speech-to-text-backend"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.20.1",
+    "asyncpg>=0.32.0",
+    "fastapi>=0.115",
+    "faster-whisper>=1.2.1",
+    "google-genai>=3.6.1",
+    "numpy>=2.5.5",
+    "pydantic-settings>=2.16.3",
+    "sqlalchemy[asyncio]>=2.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+    "websockets>=17.4",
+]
+
+[tool.ruff]
+line-length = 110
+extend-exclude = ["alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

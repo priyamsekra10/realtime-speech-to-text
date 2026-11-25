@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: stt
+      POSTGRES_PASSWORD: stt
+      POSTGRES_DB: stt
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stt"]
+      interval: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://stt:stt@db:5432/stt
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-transcribe-live}
+      WHISPER_THREADS: ${WHISPER_THREADS:-2}
+      MAX_SESSION_SECONDS: ${MAX_SESSION_SECONDS:-180}
+      MAX_SESSIONS: ${MAX_SESSIONS:-4}
+    ports:
+      - "${PORT:-8000}:8000"
+
+volumes:
+  pgdata:
