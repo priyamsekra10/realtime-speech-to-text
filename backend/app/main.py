@@ -21,7 +21,9 @@ def load_engines():
     if settings.whisper_enabled and Path(settings.whisper_model).is_dir():
         from .stt.whisper import WhisperEngine
 
-        found["whisper"] = WhisperEngine(settings.whisper_model, settings.whisper_threads, settings.words)
+        found["whisper"] = WhisperEngine(
+            settings.whisper_model, settings.whisper_threads, settings.words, settings.whisper_recheck
+        )
     if settings.gemini_api_key:
         from .stt.gemini import GeminiEngine
 
