@@ -133,8 +133,6 @@ uv run pytest
 - **Streaming logic**: that a pause closes an utterance with the right timestamps, that open speech gives partials, and that silence is dropped. These run without the model.
 - **Real model**: streams a Hinglish clip through the real Whisper model. It is skipped when the model or the clip is not on disk.
 
-GitHub Actions runs the linters, the migrations and the tests against a real PostgreSQL on every push.
-
 ## Choices I made
 
 - **No login.** A reviewer should be able to open the link and talk. History is separated by a random browser id. This keeps visitors out of each other's lists, but it is not real authentication.
