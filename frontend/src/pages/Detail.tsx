@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, type Transcript } from '../api'
 import { clock, engineName, when } from '../format'
+import Icon from '../Icon'
 
 export default function Detail() {
   const { id = '' } = useParams()
@@ -82,9 +83,10 @@ export default function Detail() {
   return (
     <section className="detail">
       <Link to="/history" className="back">
-        ← History
+        <Icon name="back" size={16} /> History
       </Link>
 
+      <div className={segments.length > 0 ? 'two wide' : ''}>
       <div className="card form">
         <input
           className="title"
@@ -117,7 +119,7 @@ export default function Detail() {
             </>
           ) : (
             <button className="btn" onClick={() => setAsking(true)}>
-              Delete
+              <Icon name="trash" size={16} /> Delete
             </button>
           )}
           <span className="grow" />
@@ -126,7 +128,7 @@ export default function Detail() {
             Copy
           </button>
           <button className="btn" onClick={download}>
-            Download .txt
+            <Icon name="download" size={16} /> .txt
           </button>
           <button className="btn primary" onClick={save} disabled={!dirty || !title.trim()}>
             Save changes
@@ -135,7 +137,7 @@ export default function Detail() {
       </div>
 
       {segments.length > 0 && (
-        <>
+        <div className="card panel">
           <h2>As it was spoken</h2>
           <ol className="segments">
             {segments.map(s => (
@@ -148,8 +150,9 @@ export default function Detail() {
               </li>
             ))}
           </ol>
-        </>
+        </div>
       )}
+      </div>
     </section>
   )
 }

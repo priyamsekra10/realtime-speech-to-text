@@ -14,6 +14,8 @@ type State = {
   reason: string
 }
 
+const quiet: number[] = Array(24).fill(0)
+
 const blank: State = { status: 'idle', lines: [], partial: '', error: '', savedId: null, reason: '' }
 
 function micError(e: unknown) {
@@ -25,7 +27,7 @@ function micError(e: unknown) {
 
 export function useLive() {
   const [state, setState] = useState(blank)
-  const [level, setLevel] = useState(0)
+  const [levels, setLevels] = useState(quiet)
   const [ms, setMs] = useState(0)
   const ws = useRef<WebSocket | null>(null)
   const rec = useRef<Recorder | null>(null)
@@ -38,7 +40,7 @@ export function useLive() {
     rec.current = null
     open.current = false
     queue.current = []
-    setLevel(0)
+    setLevels(quiet)
   }, [])
 
   const start = useCallback(
@@ -50,7 +52,7 @@ export function useLive() {
           const s = ws.current
           if (open.current && s?.readyState === WebSocket.OPEN) s.send(pcm)
           else if (queue.current.length < 100) queue.current.push(pcm)
-        }, setLevel)
+        }, peak => setLevels(l => [...l.slice(1), peak]))
       } catch (e) {
         setState({ ...blank, status: 'error', error: micError(e) })
         return
@@ -98,7 +100,7 @@ export function useLive() {
   const stop = useCallback(() => {
     rec.current?.stop()
     rec.current = null
-    setLevel(0)
+    setLevels(quiet)
     const s = ws.current
     if (s?.readyState === WebSocket.OPEN) {
       s.send(JSON.stringify({ type: 'stop' }))
@@ -129,5 +131,5 @@ export function useLive() {
     [],
   )
 
-  return { ...state, level, ms, start, stop, reset }
+  return { ...state, levels, ms, start, stop, reset }
 }

@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, type Stats, type Transcript } from '../api'
 import { clock, engineName, when } from '../format'
+import Icon from '../Icon'
 
 const SIZE = 20
 
@@ -64,42 +65,67 @@ export default function History() {
   }
 
   return (
-    <section>
+    <section className="history">
       <div className="head">
         <div>
+          <p className="eyebrow">Dashboard</p>
           <h1>History</h1>
-          <p className="soft">Every recording made in this browser.</p>
+          <p className="soft">Every recording made in this browser, saved in PostgreSQL.</p>
         </div>
         <Link className="btn primary" to="/">
-          New recording
+          <Icon name="mic" /> New recording
         </Link>
       </div>
 
       <div className="tiles">
         <div className="card tile">
-          <b>{stats?.count ?? '–'}</b>
-          <span>Transcripts</span>
+          <span className="ico">
+            <Icon name="file" />
+          </span>
+          <div>
+            <b>{stats?.count ?? '–'}</b>
+            <span>Transcripts</span>
+          </div>
         </div>
         <div className="card tile">
-          <b>{stats ? clock(stats.duration_ms) : '–'}</b>
-          <span>Time recorded</span>
+          <span className="ico">
+            <Icon name="clock" />
+          </span>
+          <div>
+            <b>{stats ? clock(stats.duration_ms) : '–'}</b>
+            <span>Time recorded</span>
+          </div>
         </div>
         <div className="card tile">
-          <b>{stats?.words ?? '–'}</b>
-          <span>Words</span>
+          <span className="ico">
+            <Icon name="text" />
+          </span>
+          <div>
+            <b>{stats?.words ?? '–'}</b>
+            <span>Words</span>
+          </div>
         </div>
       </div>
 
       <div className="bar">
-        <input
-          type="search"
-          placeholder="Search titles and text"
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          aria-label="Search"
-        />
+        <label className="search">
+          <Icon name="search" />
+          <input
+            type="search"
+            placeholder="Search titles and text"
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            aria-label="Search"
+          />
+        </label>
         <button className="btn" onClick={() => setAdding(a => !a)}>
-          {adding ? 'Cancel' : 'Add typed note'}
+          {adding ? (
+            'Cancel'
+          ) : (
+            <>
+              <Icon name="plus" /> Add typed note
+            </>
+          )}
         </button>
       </div>
 
@@ -126,9 +152,17 @@ export default function History() {
       {error && <p className="alert">{error}</p>}
 
       {items && items.length === 0 && (
-        <p className="empty">
-          {q ? 'Nothing matches that search.' : 'No transcripts yet. Make your first recording.'}
-        </p>
+        <div className="card blank">
+          <span className="ico">
+            <Icon name={q ? 'search' : 'mic'} size={22} />
+          </span>
+          <p>{q ? 'Nothing matches that search.' : 'No transcripts yet.'}</p>
+          {!q && (
+            <Link className="btn primary" to="/">
+              Make your first recording
+            </Link>
+          )}
+        </div>
       )}
 
       {items && items.length > 0 && (
@@ -158,10 +192,10 @@ export default function History() {
                 ) : (
                   <>
                     <Link className="btn" to={`/history/${t.id}`}>
-                      Edit
+                      <Icon name="edit" size={16} /> Edit
                     </Link>
                     <button className="btn" onClick={() => setAsking(t.id)} aria-label={`Delete ${t.title}`}>
-                      Delete
+                      <Icon name="trash" size={16} /> Delete
                     </button>
                   </>
                 )}

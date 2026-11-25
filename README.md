@@ -168,6 +168,6 @@ backend/
 frontend/
   public/pcm-worklet.js   microphone to PCM
   src/useLive.ts          recording state and WebSocket
-  src/pages/              Live, History, Detail
+  src/pages/              Live, History, Detail, About
 scripts/stream_wav.py     stream a WAV file to the server
 ```
