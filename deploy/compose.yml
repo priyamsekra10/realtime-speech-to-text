@@ -1,6 +1,7 @@
 # Production: the app shares a small server with another service, so both
 # containers get a low CPU weight and hard memory limits, and nothing is
-# published to the internet from here. A reverse proxy in front adds HTTPS.
+# published to the internet from here. A reverse proxy in front adds HTTPS:
+# the app joins that proxy's Docker network (EDGE_NETWORK) as `stt-app`.
 name: stt
 
 x-logging: &logging
@@ -51,7 +52,16 @@ services:
     cpu_shares: 128
     ports:
       - "127.0.0.1:${PORT:-8010}:8000"
+    networks:
+      default:
+      edge:
+        aliases: [stt-app]
     logging: *logging
 
 volumes:
   pgdata:
+
+networks:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:?set EDGE_NETWORK to the reverse proxy's Docker network}

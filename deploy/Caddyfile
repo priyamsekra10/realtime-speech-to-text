@@ -1,0 +1,18 @@
+# Example reverse proxy block for Caddy, which gets and renews the HTTPS
+# certificate by itself. Browsers only allow the microphone on HTTPS pages.
+# `stt-app` is the name the app has on the proxy's Docker network.
+speech.example.com {
+	encode zstd gzip
+	request_body {
+		max_size 1MB
+	}
+	reverse_proxy stt-app:8000
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "microphone=(self), camera=(), geolocation=()"
+		-Server
+	}
+}
