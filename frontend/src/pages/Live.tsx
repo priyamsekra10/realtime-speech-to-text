@@ -28,6 +28,7 @@ function doneNote(reason: string, saved: boolean, max: number) {
   if (!saved) return 'Nothing was heard, so nothing was saved.'
   if (reason === 'limit') return `Stopped at the ${Math.round(max / 60)} minute limit and saved.`
   if (reason === 'engine') return 'The speech engine stopped early. What it heard is saved.'
+  if (reason === 'idle') return 'Stopped because no sound was coming in. What was said before is saved.'
   return 'Saved to history.'
 }
 

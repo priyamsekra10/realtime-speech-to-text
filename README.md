@@ -151,7 +151,8 @@ uv run pytest
 ```
 
 - **CRUD API**: create, read, list, paging, search, update, delete, validation, and that one browser cannot see another's transcripts.
-- **Live session**: a full WebSocket session against a fake engine, a silent session that saves nothing, the time limit, the busy limit and bad input.
+- **Live session**: a full WebSocket session against a fake engine, a silent session that saves nothing, the time limit, the idle timeout, the busy limit and bad input.
+- **Frontend serving**: app pages get the app, files are served, and anything else is a 404.
 - **Streaming logic**: that a pause closes an utterance with the right timestamps, that open speech gives partials, and that silence is dropped. These run without the model.
 - **Real model**: streams a Hinglish clip through the real Whisper model. It is skipped when the model or the clip is not on disk.
 
@@ -161,7 +162,7 @@ uv run pytest
 - **A plain WebSocket, not LiveKit or Pipecat.** Those are built for two-way voice agents with many participants. This app sends audio one way, and writing the streaming by hand keeps the interesting part in this repository.
 - **Roman letters for Hindi in the open-source engine.** That is how people type Hinglish, and it is what the model was trained to write.
 - **One container for the app.** FastAPI serves the built React files, the API and the WebSocket, so there is one thing to deploy.
-- **Limits for a public demo.** A session stops after `MAX_SESSION_SECONDS` (3 minutes by default) and the server takes `MAX_SESSIONS` sessions at once.
+- **Limits for a public demo.** A session stops after `MAX_SESSION_SECONDS` (3 minutes by default), the server takes `MAX_SESSIONS` sessions at once, and a session that sends no audio for 15 seconds is closed so it cannot hold a slot.
 
 ## What I would do next
 
@@ -176,7 +177,8 @@ uv run pytest
 ```
 backend/
   app/
-    main.py            app, engine loading, static files
+    main.py            app and engine loading
+    spa.py             serves the built frontend
     routes/live.py     WebSocket session
     routes/transcripts.py   CRUD
     stt/whisper.py     open-source engine and the streaming loop

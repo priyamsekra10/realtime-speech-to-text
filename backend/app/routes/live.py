@@ -13,6 +13,8 @@ from .transcripts import ID
 router = APIRouter()
 log = logging.getLogger(__name__)
 
+IDLE = 15
+
 
 async def send(ws, **msg):
     try:
@@ -99,7 +101,11 @@ async def session(ws, eng, owner):
     reason = "stopped"
     try:
         while True:
-            msg = await ws.receive()
+            try:
+                msg = await asyncio.wait_for(ws.receive(), IDLE)
+            except TimeoutError:
+                reason = "idle"
+                break
             if msg["type"] == "websocket.disconnect":
                 reason = "disconnected"
                 break
