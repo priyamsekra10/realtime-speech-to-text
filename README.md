@@ -39,10 +39,10 @@ flowchart LR
 |---|---|---|
 | Model | [Oriserve/Whisper-Hindi2Hinglish-Swift](https://huggingface.co/Oriserve/Whisper-Hindi2Hinglish-Swift) (Apache-2.0), run with faster-whisper on CPU | `gemini-3.5-transcribe-live` |
 | Runs | inside the app container | Google's API, free tier |
-| Hindi is written | in Roman letters: "mujhe kal office jaana hai" | as the API returns it |
+| Hindi is written | in Roman letters: "mujhe kal office jaana hai" | as the API returns it: Devanagari for some sentences, Roman letters for others |
 | Needs | nothing | `GEMINI_API_KEY` |
 
-The assignment names "Gemini Live 3.1". Google now lists that model as legacy and has a model made for live transcription, so that is the default. The older one still works: set `GEMINI_MODEL=gemini-3.1-flash-live-preview`.
+The assignment names "Gemini Live 3.1". Google now lists that model as legacy and has a model made for live transcription, so that is the default. The older one also works with this code (`GEMINI_MODEL=gemini-3.1-flash-live-preview`), but it is a conversation model: it returns text only at each pause, so words do not appear while you are speaking.
 
 ### Streaming with a model that does not stream
 

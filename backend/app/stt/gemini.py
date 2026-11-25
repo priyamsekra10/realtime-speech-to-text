@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import time
 
 from google import genai
@@ -10,7 +11,13 @@ from .base import SR, Event
 log = logging.getLogger(__name__)
 
 QUIET = 1.5
+SETTLED = 0.6
 DRAIN = 8
+GLUED = re.compile(r"([.?!।])(?=[^\W\d_])")
+
+
+def tidy(text):
+    return GLUED.sub(r"\1 ", text).strip()
 
 
 class GeminiEngine:
@@ -83,12 +90,12 @@ class GeminiStream:
         if t and t.text:
             if self.start is None:
                 self.start = self.now()
-            self.pending = t.text.strip()
+            self.pending = tidy(t.text)
             self.out.put_nowait(Event("partial", self.pending, self.start, self.now()))
         t = c.input_transcription
         if t and t.text and t.text.strip():
             start = self.now() if self.start is None else self.start
-            self.out.put_nowait(Event("final", t.text.strip(), start, self.now(), t.language_code))
+            self.out.put_nowait(Event("final", tidy(t.text), start, self.now(), t.language_code))
             self.start = None
             self.pending = ""
 
@@ -106,21 +113,25 @@ class GeminiStream:
         t0 = time.monotonic()
         self.heard = t0
         while time.monotonic() - t0 < DRAIN and not self.task.done():
-            if time.monotonic() - self.heard > QUIET:
+            if time.monotonic() - self.heard > (QUIET if self.pending else SETTLED):
                 break
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
+        await self.stop()
 
-    async def events(self):
-        while (ev := await self.out.get()) is not None:
-            yield ev
-
-    async def close(self):
+    async def stop(self):
         if self.task and not self.task.done():
             self.task.cancel()
             try:
                 await self.task
             except asyncio.CancelledError:
                 pass
+
+    async def events(self):
+        while (ev := await self.out.get()) is not None:
+            yield ev
+
+    async def close(self):
+        await self.stop()
         if self.conn:
             try:
                 await self.conn.__aexit__(None, None, None)

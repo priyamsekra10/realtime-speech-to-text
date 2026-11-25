@@ -122,7 +122,7 @@ async def session(ws, eng, owner):
     finally:
         try:
             await stream.end()
-            await asyncio.wait_for(task, 30)
+            await asyncio.wait_for(task, 10)
         except Exception:
             task.cancel()
         await stream.close()
