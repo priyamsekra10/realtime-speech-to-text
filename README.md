@@ -4,6 +4,8 @@ Live speech to text for mixed Hindi and English. You speak into the browser and 
 
 Built for the Procucev AI Tech hiring assignment.
 
+**Live demo:** https://stt.65-2-214-112.sslip.io (allow the microphone when the browser asks)
+
 ## What it does
 
 - **Live transcription** over a WebSocket, with grey interim words that turn into fixed text at each pause.
@@ -110,9 +112,17 @@ uv run python ../scripts/stream_wav.py path/to/clip.wav whisper
 
 - both containers have hard memory limits and a low CPU weight, so the other service always gets the CPU first
 - the app runs as a non-root user on a read-only filesystem with all capabilities dropped
-- nothing is published to the internet from this file; a reverse proxy in front adds HTTPS, which browsers need before they allow the microphone
+- nothing is published to the internet from this file; the app joins the Docker network of a Caddy reverse proxy, which adds HTTPS. Browsers need HTTPS before they allow the microphone. [`deploy/Caddyfile`](deploy/Caddyfile) has the proxy block.
 
-On that server the open-source engine uses one thread. Interim text arrives every 0.6 to 1.0 seconds and each sentence is fixed at the pause. The other service's page load time did not change while a recording was running.
+Measured on that server with a 21 second clip of three sentences, streamed in real time over the internet:
+
+| | Open source | Gemini Live |
+|---|---|---|
+| First words on screen | 1.1 s | 0.8 s |
+| Interim updates | 25, about one every 0.85 s | 41, about one every 0.5 s |
+| Sentence fixed | at each pause | at each pause |
+
+The open-source engine runs on one CPU thread there. The other service's page load time did not change while a recording was running.
 
 ## API
 
