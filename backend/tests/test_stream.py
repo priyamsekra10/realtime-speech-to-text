@@ -31,8 +31,12 @@ def loud(audio):
 
 
 class Stub:
+    def __init__(self):
+        self.calls = 0
+
     async def decode(self, audio, beam=1):
-        return f"{len(audio) * 1000 // SR} ms"
+        self.calls += 1
+        return f"{len(audio) * 1000 // SR} ms."
 
 
 async def start():
@@ -53,9 +57,9 @@ def test_pause_closes_an_utterance(monkeypatch):
         return first, [ev async for ev in s.events()]
 
     first, rest = asyncio.run(go())
-    assert (first.kind, first.text, first.start_ms, first.end_ms) == ("final", "1000 ms", 0, 1000)
+    assert (first.kind, first.text, first.start_ms, first.end_ms) == ("final", "1000 ms.", 0, 1000)
     last = [ev for ev in rest if ev.kind == "final"]
-    assert [(ev.text, ev.start_ms, ev.end_ms) for ev in last] == [("1000 ms", 2000, 3000)]
+    assert [(ev.text, ev.start_ms, ev.end_ms) for ev in last] == [("1000 ms.", 2000, 3000)]
 
 
 def test_open_speech_gives_partials(monkeypatch):
@@ -70,6 +74,24 @@ def test_open_speech_gives_partials(monkeypatch):
 
     ev = asyncio.run(go())
     assert (ev.kind, ev.text) == ("partial", "1000 ms")
+
+
+def test_pause_reuses_interim_text_that_heard_it_all(monkeypatch):
+    monkeypatch.setattr(whisper, "spans", loud)
+
+    async def go():
+        s = await start()
+        await s.feed(tone)
+        partial = await asyncio.wait_for(s.out.get(), 2)
+        await s.feed(quiet)
+        final = await asyncio.wait_for(s.out.get(), 2)
+        await s.close()
+        return partial, final, s.eng.calls
+
+    partial, final, calls = asyncio.run(go())
+    assert (partial.kind, final.kind) == ("partial", "final")
+    assert final.text == "1000 ms."
+    assert calls == 1
 
 
 def test_silence_is_dropped(monkeypatch):
