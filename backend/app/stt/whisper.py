@@ -1,8 +1,10 @@
 import asyncio
 from pathlib import Path
 
+import ctranslate2
 import numpy as np
 from faster_whisper import WhisperModel
+from faster_whisper.tokenizer import Tokenizer
 from faster_whisper.vad import VadOptions, get_speech_timestamps
 
 from .base import SR, Event
@@ -18,6 +20,21 @@ def spans(audio):
     return get_speech_timestamps(audio, VAD)
 
 
+def window(samples):
+    if samples <= 8 * SR:
+        return 1000
+    if samples <= 13 * SR:
+        return 1500
+    return 3000
+
+
+def sane(text):
+    words = text.split()
+    if any(len(w) > 40 for w in words):
+        return False
+    return len(words) <= 6 or len(set(words)) > 2
+
+
 class WhisperEngine:
     name = "whisper"
 
@@ -25,22 +42,36 @@ class WhisperEngine:
         self.model = WhisperModel(path, device="cpu", compute_type="int8", cpu_threads=threads)
         self.label = Path(path).name
         self.hint = ", ".join(words) or None
+        self.tok = Tokenizer(
+            self.model.hf_tokenizer, self.model.model.is_multilingual, task="transcribe", language="en"
+        )
+        self.prompt = self.model.get_prompt(self.tok, [], without_timestamps=True, hotwords=self.hint)
         self.busy = asyncio.Lock()
 
-    def text(self, audio, beam):
+    def text(self, audio):
         segs, _ = self.model.transcribe(
             audio,
             language="en",
-            beam_size=beam,
+            beam_size=5,
             condition_on_previous_text=False,
             without_timestamps=True,
             hotwords=self.hint,
         )
         return " ".join(s.text.strip() for s in segs).strip()
 
+    def quick(self, audio):
+        n = window(len(audio))
+        feats = self.model.feature_extractor(audio)[:, :n]
+        feats = np.pad(feats, ((0, 0), (0, n - feats.shape[1])))
+        view = ctranslate2.StorageView.from_array(np.ascontiguousarray(feats[None], dtype=np.float32))
+        out = self.model.model.generate(view, [self.prompt], beam_size=1, max_length=200)
+        ids = [t for t in out[0].sequences_ids[0] if t < self.tok.eot]
+        text = self.tok.decode(ids).strip()
+        return text if sane(text) else ""
+
     async def decode(self, audio, beam=1):
         async with self.busy:
-            return await asyncio.to_thread(self.text, audio, beam)
+            return await asyncio.to_thread(self.quick if beam == 1 else self.text, audio)
 
     async def open(self):
         s = WhisperStream(self)
