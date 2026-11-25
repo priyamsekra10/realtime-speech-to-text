@@ -53,6 +53,7 @@ Whisper transcribes a finished clip. It has no streaming mode. The streaming is 
 - Whisper pads every clip to 30 seconds, so a two-word clip costs as much as a full one. Interim decodes call the model with a 10 or 15 second window, which is about 2.7 times faster on one CPU thread. A window cut tighter than that made the model repeat itself, so it is not used.
 - When the detector sees a pause of half a second, the utterance becomes a `final` and is cut from the buffer. If the last interim decode already heard the whole utterance, its text is reused, so nothing stalls at the pause.
 - Silence is dropped, and speech that runs past 20 seconds without a pause is cut so the buffer stays small.
+- `WHISPER_RECHECK=true` decodes each finished sentence once more with beam search and the full window. It is a little more accurate and costs a pause on a slow CPU, so it is off by default.
 - A short list of procurement words (RFQ, BOQ, quotation, ...) is passed to both engines as a hint. It is set with `VOCABULARY`.
 
 ## Run it
@@ -102,6 +103,16 @@ To test the live path without a microphone, stream a 16 kHz mono WAV file in rea
 cd backend
 uv run python ../scripts/stream_wav.py path/to/clip.wav whisper
 ```
+
+## Deployment
+
+[`deploy/compose.yml`](deploy/compose.yml) is the production setup. The app shares a one-core server with another live service, so:
+
+- both containers have hard memory limits and a low CPU weight, so the other service always gets the CPU first
+- the app runs as a non-root user on a read-only filesystem with all capabilities dropped
+- nothing is published to the internet from this file; a reverse proxy in front adds HTTPS, which browsers need before they allow the microphone
+
+On that server the open-source engine uses one thread. Interim text arrives every 0.6 to 1.0 seconds and each sentence is fixed at the pause. The other service's page load time did not change while a recording was running.
 
 ## API
 

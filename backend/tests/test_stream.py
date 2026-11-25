@@ -31,16 +31,19 @@ def loud(audio):
 
 
 class Stub:
-    def __init__(self):
+    def __init__(self, recheck=False):
+        self.recheck = recheck
         self.calls = 0
+        self.beams = []
 
     async def decode(self, audio, beam=1):
         self.calls += 1
+        self.beams.append(beam)
         return f"{len(audio) * 1000 // SR} ms."
 
 
-async def start():
-    s = WhisperStream(Stub())
+async def start(recheck=False):
+    s = WhisperStream(Stub(recheck))
     s.task = asyncio.create_task(s.run())
     return s
 
@@ -92,6 +95,23 @@ def test_pause_reuses_interim_text_that_heard_it_all(monkeypatch):
     assert (partial.kind, final.kind) == ("partial", "final")
     assert final.text == "1000 ms."
     assert calls == 1
+
+
+def test_recheck_decodes_the_finished_utterance_again(monkeypatch):
+    monkeypatch.setattr(whisper, "spans", loud)
+
+    async def go():
+        s = await start(recheck=True)
+        await s.feed(tone)
+        await asyncio.wait_for(s.out.get(), 2)
+        await s.feed(quiet)
+        final = await asyncio.wait_for(s.out.get(), 2)
+        await s.close()
+        return final, s.eng.beams
+
+    final, beams = asyncio.run(go())
+    assert final.kind == "final"
+    assert beams == [1, 5]
 
 
 def test_silence_is_dropped(monkeypatch):

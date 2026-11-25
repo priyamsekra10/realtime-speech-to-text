@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     whisper_enabled: bool = True
     whisper_model: str = "../models/hinglish-swift"
     whisper_threads: int = 2
+    whisper_recheck: bool = False
 
     vocabulary: str = "RFQ,BOQ,PO,quotation,purchase order,vendor,GST,invoice"
     max_session_seconds: int = 180

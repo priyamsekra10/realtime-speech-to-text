@@ -39,9 +39,10 @@ def sane(text):
 class WhisperEngine:
     name = "whisper"
 
-    def __init__(self, path, threads=2, words=()):
+    def __init__(self, path, threads=2, words=(), recheck=False):
         self.model = WhisperModel(path, device="cpu", compute_type="int8", cpu_threads=threads)
         self.label = Path(path).name
+        self.recheck = recheck
         self.hint = ", ".join(words) or None
         self.tok = Tokenizer(
             self.model.hf_tokenizer, self.model.model.is_multilingual, task="transcribe", language="en"
@@ -155,7 +156,9 @@ class WhisperStream:
             return False
 
         text, upto = self.heard
-        if stop != last or upto < self.offset + stop - TAIL:
+        if self.eng.recheck:
+            text = ""
+        elif stop != last or upto < self.offset + stop - TAIL:
             text = await self.eng.decode(buf[first:stop])
         if not text:
             text = await self.eng.decode(buf[first:stop], beam=5)
