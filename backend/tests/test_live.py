@@ -2,6 +2,7 @@ import pytest
 from starlette.websockets import WebSocketDisconnect
 
 from app.config import settings
+from app.routes import live
 
 FRAME = b"\0\0" * 1600
 
@@ -62,6 +63,14 @@ def test_session_stops_at_time_limit(client, me, monkeypatch):
         msgs = drain(ws)
     assert msgs[-1]["reason"] == "limit"
     assert msgs[-1]["id"]
+
+
+def test_session_with_no_audio_is_closed(client, me, monkeypatch):
+    monkeypatch.setattr(live, "IDLE", 0.2)
+    with client.websocket_connect(url(me)) as ws:
+        ws.receive_json()
+        msgs = drain(ws)
+    assert msgs[-1] == {"type": "done", "reason": "idle", "id": None}
 
 
 def test_unknown_engine(client, me):
